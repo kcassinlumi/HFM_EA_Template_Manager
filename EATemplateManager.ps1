@@ -1,6 +1,6 @@
 ﻿#Requires -Version 5.1
 <#
-    HFM Extended Analytics Template Manager (single-file build 2026-10-09 09:54).
+    HFM Extended Analytics Template Manager (single-file build 2026-10-09 10:15).
 
     Manage HFM Extended Analytics templates (the SS_PREF* rows of <APP>_USERPARAMS):
     browse, edit, create, rename, delete, copy between users/applications, export/import, back up and restore.
@@ -12,7 +12,7 @@
     Your connection details and last selection (never the password) are remembered per Windows user in
     %APPDATA%\EATemplateManager\preferences.json. Backups\ and EATemplateManager.log are created next to this file.
 
-    Built from separate source files by Build-SingleFile.ps1; edit those, not this file.
+    Built from the src\ folder by Build-SingleFile.ps1; edit those files, not this one.
 #>
 
 if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
@@ -304,6 +304,15 @@ function Get-UserParamKey {
 #endregion
 
 #region Backups
+
+function Set-EaBackupDirectory {
+    param([Parameter(Mandatory)][string]$Path)
+    $script:BackupDir = $Path
+}
+
+function Get-EaBackupDirectory {
+    return $script:BackupDir
+}
 
 function Backup-EaRows {
     <#
@@ -883,7 +892,7 @@ Export-ModuleMember -Function @(
     'Connect-EaDatabase', 'Disconnect-EaDatabase', 'Test-EaConnection',
     'Get-HfmApp', 'Get-EaDsn', 'Get-EaTemplateUser', 'Get-HfmUser', 'Get-HfmActiveUser',
     'Read-UserParam', 'Read-UserParamBytes',
-    'Backup-EaRows', 'Restore-EaBackup',
+    'Set-EaBackupDirectory', 'Get-EaBackupDirectory', 'Backup-EaRows', 'Restore-EaBackup',
     'ConvertFrom-EaIndexXml', 'ConvertTo-EaIndexXml', 'Get-EaIndex', 'Get-EaTemplateList', 'Repair-EaIndex',
     'Get-EaTemplateKey', 'Test-EaTemplateName', 'Get-NewEaTemplateXml',
     'ConvertFrom-EaTemplateXml', 'ConvertTo-EaTemplateXml',
@@ -895,100 +904,120 @@ Export-ModuleMember -Function @(
 }
 #endregion
 
-#region Embedded window layouts (source: Xaml\*.xaml)
+#region Embedded window layouts and theme (source: Xaml\*.xaml)
 $script:XamlText = @{
     'ConnectDialog.xaml' = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Connect to HFM database" Width="440" SizeToContent="Height" ResizeMode="NoResize"
-        WindowStartupLocation="CenterOwner" FontSize="13" ShowInTaskbar="False">
-    <Grid Margin="14">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" Text="SQL Server" VerticalAlignment="Center" Margin="0,4,10,4"/>
-        <TextBox Grid.Row="0" Grid.Column="1" x:Name="txtServer" Margin="0,4" ToolTip="server, server\instance or server,port"/>
-        <TextBlock Grid.Row="1" Text="Database" VerticalAlignment="Center" Margin="0,4,10,4"/>
-        <TextBox Grid.Row="1" Grid.Column="1" x:Name="txtDatabase" Margin="0,4"/>
-        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,4">
-            <RadioButton x:Name="rbWindows" Content="Windows authentication" Margin="0,0,16,0" IsChecked="True"/>
-            <RadioButton x:Name="rbSql" Content="SQL login"/>
-        </StackPanel>
-        <TextBlock Grid.Row="3" Text="Login" VerticalAlignment="Center" Margin="0,4,10,4"/>
-        <TextBox Grid.Row="3" Grid.Column="1" x:Name="txtSqlUser" Margin="0,4"/>
-        <TextBlock Grid.Row="4" Text="Password" VerticalAlignment="Center" Margin="0,4,10,4"/>
-        <PasswordBox Grid.Row="4" Grid.Column="1" x:Name="pwdSql" Margin="0,4"/>
-        <TextBlock Grid.Row="5" Grid.ColumnSpan="2" x:Name="txtError" Foreground="#FFC62828" TextWrapping="Wrap" Margin="0,8,0,0"/>
-        <StackPanel Grid.Row="6" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button x:Name="btnOK" Content="Connect" IsDefault="True" Padding="14,3" Margin="0,0,8,0"/>
-            <Button x:Name="btnCancel" Content="Cancel" IsCancel="True" Padding="14,3"/>
-        </StackPanel>
-    </Grid>
+        Title="Connect to HFM database" Width="460" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource LightBeigeBrush}" Foreground="{StaticResource DeepGreenBrush}" FontFamily="Segoe UI" FontSize="13">
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="{StaticResource DeepGreenBrush}" Padding="18,14">
+            <StackPanel>
+                <Image x:Name="imgLogo" Height="20" HorizontalAlignment="Left" RenderOptions.BitmapScalingMode="HighQuality"/>
+                <TextBlock Text="Connect to the HFM database" Foreground="{StaticResource WhiteBrush}" FontSize="16" FontWeight="SemiBold" Margin="0,10,0,0"/>
+                <TextBlock Text="EA Template Manager" Foreground="{StaticResource GreyGreenBrush}"/>
+            </StackPanel>
+        </Border>
+        <Grid Margin="18,14,18,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="SQL Server" Style="{StaticResource FieldLabel}"/>
+            <TextBox Grid.Row="0" Grid.Column="1" x:Name="txtServer" Margin="0,4" ToolTip="server, server\instance or server,port"/>
+            <TextBlock Grid.Row="1" Text="Database" Style="{StaticResource FieldLabel}"/>
+            <TextBox Grid.Row="1" Grid.Column="1" x:Name="txtDatabase" Margin="0,4"/>
+            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,4">
+                <RadioButton x:Name="rbWindows" Content="Windows authentication" Margin="0,0,16,0" IsChecked="True"/>
+                <RadioButton x:Name="rbSql" Content="SQL login"/>
+            </StackPanel>
+            <TextBlock Grid.Row="3" Text="Login" Style="{StaticResource FieldLabel}"/>
+            <TextBox Grid.Row="3" Grid.Column="1" x:Name="txtSqlUser" Margin="0,4"/>
+            <TextBlock Grid.Row="4" Text="Password" Style="{StaticResource FieldLabel}"/>
+            <PasswordBox Grid.Row="4" Grid.Column="1" x:Name="pwdSql" Margin="0,4"/>
+            <TextBlock Grid.Row="5" Grid.ColumnSpan="2" x:Name="txtError" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+            <StackPanel Grid.Row="6" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                <Button x:Name="btnOK" Content="Connect" IsDefault="True" Style="{StaticResource PrimaryButton}" Margin="0,0,8,0" MinWidth="90"/>
+                <Button x:Name="btnCancel" Content="Cancel" IsCancel="True" Margin="0" MinWidth="90"/>
+            </StackPanel>
+        </Grid>
+    </DockPanel>
 </Window>
 '@
     'CopyDialog.xaml' = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Copy templates" Width="520" Height="560" MinHeight="420"
-        WindowStartupLocation="CenterOwner" FontSize="13" ShowInTaskbar="False">
-    <DockPanel Margin="14">
-        <TextBlock DockPanel.Dock="Top" x:Name="txtHeader" TextWrapping="Wrap" Margin="0,0,0,10"/>
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
-            <TextBlock Text="Target application" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <ComboBox x:Name="cmbTargetApp" Width="200"/>
-        </StackPanel>
-        <TextBlock DockPanel.Dock="Top" x:Name="txtAppWarn" Visibility="Collapsed" Foreground="#FFA35200" TextWrapping="Wrap" Margin="0,0,0,8"
-                   Text="The target is a different application: check that the POV members and the DSN are valid there."/>
-        <StackPanel DockPanel.Dock="Bottom">
-            <TextBlock Text="If a template with the same name exists" FontWeight="SemiBold" Margin="0,10,0,4"/>
-            <RadioButton x:Name="rbSkip" Content="Skip it" IsChecked="True" Margin="0,2"/>
-            <RadioButton x:Name="rbOverwrite" Content="Overwrite it" Margin="0,2"/>
-            <RadioButton x:Name="rbRename" Content="Keep both (new one gets a _copy suffix)" Margin="0,2"/>
-            <TextBlock x:Name="txtError" Foreground="#FFC62828" TextWrapping="Wrap" Margin="0,8,0,0"/>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-                <Button x:Name="btnOK" Content="Copy" IsDefault="True" Padding="14,3" Margin="0,0,8,0" MinWidth="72"/>
-                <Button x:Name="btnCancel" Content="Cancel" IsCancel="True" Padding="14,3" MinWidth="72"/>
+        Title="Copy templates" Width="540" Height="600" MinHeight="440"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource LightBeigeBrush}" Foreground="{StaticResource DeepGreenBrush}" FontFamily="Segoe UI" FontSize="13">
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Height="4" Background="{StaticResource ElectricGreenBrush}"/>
+        <DockPanel Margin="18,14,18,16">
+            <TextBlock DockPanel.Dock="Top" x:Name="txtHeader" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,0,0,12"/>
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                <TextBlock Text="Target application" Style="{StaticResource FieldLabel}"/>
+                <ComboBox x:Name="cmbTargetApp" Width="200" Padding="6,4"/>
             </StackPanel>
-        </StackPanel>
-        <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
-            <Button DockPanel.Dock="Right" x:Name="btnAddUser" Content="Add" Padding="10,3" Margin="6,0,0,0"/>
-            <TextBox x:Name="txtNewUser" ToolTip="Type a user name exactly as HFM stores it, e.g. jsmith@Native Directory"/>
+            <TextBlock DockPanel.Dock="Top" x:Name="txtAppWarn" Visibility="Collapsed" Foreground="{StaticResource WarningBrush}" TextWrapping="Wrap" Margin="0,0,0,8"
+                       Text="The target is a different application: check that the POV members and the DSN are valid there."/>
+            <StackPanel DockPanel.Dock="Bottom">
+                <TextBlock Text="If a template with the same name exists" Style="{StaticResource SectionTitle}" Margin="0,12,0,4"/>
+                <RadioButton x:Name="rbSkip" Content="Skip it" IsChecked="True" Margin="0,3"/>
+                <RadioButton x:Name="rbOverwrite" Content="Overwrite it" Margin="0,3"/>
+                <RadioButton x:Name="rbRename" Content="Keep both (new one gets a _copy suffix)" Margin="0,3"/>
+                <TextBlock x:Name="txtError" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                    <Button x:Name="btnOK" Content="Copy" IsDefault="True" Style="{StaticResource PrimaryButton}" Margin="0,0,8,0" MinWidth="90"/>
+                    <Button x:Name="btnCancel" Content="Cancel" IsCancel="True" Margin="0" MinWidth="90"/>
+                </StackPanel>
+            </StackPanel>
+            <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                <Button DockPanel.Dock="Right" x:Name="btnAddUser" Content="Add" Margin="8,0,0,0"/>
+                <TextBox x:Name="txtNewUser" VerticalContentAlignment="Center" ToolTip="Type a user name exactly as HFM stores it, e.g. jsmith@Native Directory"/>
+            </DockPanel>
+            <TextBlock DockPanel.Dock="Top" Text="Target users (click to select one or more)" Style="{StaticResource SectionTitle}" Margin="0,0,0,4"/>
+            <ListBox x:Name="lstUsers" SelectionMode="Multiple"/>
         </DockPanel>
-        <TextBlock DockPanel.Dock="Top" Text="Target users (click to select one or more)" FontWeight="SemiBold" Margin="0,0,0,4"/>
-        <ListBox x:Name="lstUsers" SelectionMode="Multiple"/>
     </DockPanel>
 </Window>
 '@
     'MainWindow.xaml' = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="HFM EA Template Manager" Width="1220" Height="780" MinWidth="900" MinHeight="560"
-        WindowStartupLocation="CenterScreen" FontSize="13">
-    <Window.Resources>
-        <Style TargetType="Button">
-            <Setter Property="Padding" Value="10,3"/>
-            <Setter Property="Margin" Value="0,0,6,6"/>
-            <Setter Property="MinWidth" Value="72"/>
-        </Style>
-        <Style x:Key="FieldLabel" TargetType="TextBlock">
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Margin" Value="0,4,10,4"/>
-        </Style>
-        <Style x:Key="Mono" TargetType="Control">
-            <Setter Property="FontFamily" Value="Consolas"/>
-        </Style>
-    </Window.Resources>
+        Title="HFM EA Template Manager" Width="1220" Height="800" MinWidth="900" MinHeight="580"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource LightBeigeBrush}" Foreground="{StaticResource DeepGreenBrush}" FontFamily="Segoe UI" FontSize="13">
     <DockPanel>
+        <!-- Brand header -->
+        <Border DockPanel.Dock="Top" Background="{StaticResource DeepGreenBrush}" Padding="18,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Image x:Name="imgLogo" Height="22" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                    <Border Width="2" Height="22" Background="{StaticResource ElectricGreenBrush}" Margin="0,0,16,0"/>
+                    <TextBlock Text="EA Template Manager" Foreground="{StaticResource WhiteBrush}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock Text="HFM Extended Analytics" Foreground="{StaticResource GreyGreenBrush}" FontSize="13" VerticalAlignment="Center" Margin="12,3,0,0"/>
+                </StackPanel>
+                <TextBlock Grid.Column="3" x:Name="txtConnection" Text="Not connected" Foreground="{StaticResource LightGreenBrush}" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
                 <MenuItem x:Name="mnuConnect" Header="_Connect..."/>
@@ -1006,10 +1035,11 @@ $script:XamlText = @{
         </Menu>
 
         <StatusBar DockPanel.Dock="Bottom">
-            <TextBlock x:Name="txtStatus" Text="Not connected."/>
+            <TextBlock x:Name="txtStatus" Text="Not connected." Foreground="{StaticResource LightGreenBrush}"/>
         </StatusBar>
 
-        <Border DockPanel.Dock="Top" Padding="10,8" BorderThickness="0,0,0,1" BorderBrush="#FFD0D0D0" Background="#FFF5F6F8">
+        <!-- Application / user bar -->
+        <Border DockPanel.Dock="Top" Padding="18,10" Background="{StaticResource BeigeBrush}" BorderThickness="0,1,0,1" BorderBrush="{StaticResource CardBorderBrush}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -1018,143 +1048,145 @@ $script:XamlText = @{
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Column="0" Text="Application" Style="{StaticResource FieldLabel}"/>
-                <ComboBox Grid.Column="1" x:Name="cmbApp" Width="170" Margin="0,0,16,0"/>
-                <TextBlock Grid.Column="2" Text="User" Style="{StaticResource FieldLabel}"/>
-                <ComboBox Grid.Column="3" x:Name="cmbUser" Width="300" IsEditable="True"
+                <TextBlock Grid.Column="0" Text="Application" Style="{StaticResource FieldLabel}" FontWeight="SemiBold"/>
+                <ComboBox Grid.Column="1" x:Name="cmbApp" Width="170" Margin="0,0,20,0" VerticalContentAlignment="Center" Padding="6,4"/>
+                <TextBlock Grid.Column="2" Text="User" Style="{StaticResource FieldLabel}" FontWeight="SemiBold"/>
+                <ComboBox Grid.Column="3" x:Name="cmbUser" Width="300" IsEditable="True" VerticalContentAlignment="Center" Padding="6,4"
                           ToolTip="Pick a user with templates, or type a user name (user@Provider) and press Enter."/>
-                <Button Grid.Column="4" x:Name="btnLoadUser" Content="Load" Margin="6,0,0,0"/>
-                <TextBlock Grid.Column="6" x:Name="txtConnection" Text="Not connected" VerticalAlignment="Center" Foreground="#FF555555"/>
-                <TextBlock Grid.Row="1" Grid.ColumnSpan="7" x:Name="txtActiveWarn" Visibility="Collapsed" Margin="0,6,0,0"
-                           Foreground="#FFA35200" TextWrapping="Wrap"
+                <Button Grid.Column="4" x:Name="btnLoadUser" Content="Load" Margin="8,0,0,0"/>
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="6" x:Name="txtActiveWarn" Visibility="Collapsed" Margin="0,8,0,0"
+                           Foreground="{StaticResource WarningBrush}" TextWrapping="Wrap"
                            Text="This user has an active HFM session on this application. Ask them to log off first: HFM may not see these changes, or may overwrite them, until they log in again."/>
             </Grid>
         </Border>
 
-        <Grid Margin="10">
+        <Grid Margin="14">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="300" MinWidth="220"/>
-                <ColumnDefinition Width="6"/>
+                <ColumnDefinition Width="310" MinWidth="230"/>
+                <ColumnDefinition Width="10"/>
                 <ColumnDefinition Width="*" MinWidth="420"/>
             </Grid.ColumnDefinitions>
 
             <!-- Template list -->
-            <DockPanel Grid.Column="0">
-                <TextBlock DockPanel.Dock="Top" Text="Templates" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
-                    <Button x:Name="btnNew" Content="New..."/>
-                    <Button x:Name="btnRename" Content="Rename..."/>
-                    <Button x:Name="btnDelete" Content="Delete"/>
-                    <Button x:Name="btnCopy" Content="Copy to..."/>
-                    <Button x:Name="btnExport" Content="Export..."/>
-                    <Button x:Name="btnImport" Content="Import..."/>
-                </WrapPanel>
-                <ListBox x:Name="lstTemplates" SelectionMode="Extended"
-                         ToolTip="Ctrl/Shift-click to select several templates for Copy, Export or Delete."/>
-            </DockPanel>
+            <Border Grid.Column="0" Style="{StaticResource Card}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Templates" Style="{StaticResource SectionTitle}" FontSize="15" Margin="0,0,0,8"/>
+                    <WrapPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                        <Button x:Name="btnNew" Content="New..."/>
+                        <Button x:Name="btnRename" Content="Rename..."/>
+                        <Button x:Name="btnDelete" Content="Delete"/>
+                        <Button x:Name="btnCopy" Content="Copy to..."/>
+                        <Button x:Name="btnExport" Content="Export..."/>
+                        <Button x:Name="btnImport" Content="Import..."/>
+                    </WrapPanel>
+                    <ListBox x:Name="lstTemplates" SelectionMode="Extended" BorderThickness="0"
+                             ToolTip="Ctrl/Shift-click to select several templates for Copy, Export or Delete."/>
+                </DockPanel>
+            </Border>
 
-            <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="Transparent"/>
+            <GridSplitter Grid.Column="1" Width="10" HorizontalAlignment="Stretch" Background="Transparent"/>
 
             <!-- Editor -->
-            <DockPanel Grid.Column="2">
-                <StackPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                    <TextBlock x:Name="txtTemplateTitle" Text="No template selected" FontSize="16" FontWeight="SemiBold"/>
-                    <TextBlock x:Name="txtTemplateInfo" Foreground="#FF555555" TextWrapping="Wrap"/>
-                </StackPanel>
-                <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
-                    <Button x:Name="btnSave" Content="Save" FontWeight="SemiBold"/>
-                    <Button x:Name="btnRevert" Content="Revert"/>
-                    <Button x:Name="btnSaveAs" Content="Save as new..."/>
-                </WrapPanel>
-                <TabControl x:Name="tabEditor" IsEnabled="False">
-                    <TabItem Header="POV">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <StackPanel x:Name="pnlPovTab" Margin="10">
-                                <TextBlock TextWrapping="Wrap" Foreground="#FF555555" Margin="0,0,0,8"
-                                           Text="Each expression starts with # for members (e.g. #Jan;Feb;Mar) or { for member lists (e.g. {Top.[Hierarchy]}). Combine several with ; (e.g. {[Base]};{[Hierarchy]})."/>
-                                <Grid x:Name="gridPov">
+            <Border Grid.Column="2" Style="{StaticResource Card}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <TextBlock x:Name="txtTemplateTitle" Text="No template selected" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource DeepGreenBrush}"/>
+                        <TextBlock x:Name="txtTemplateInfo" Style="{StaticResource MutedText}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                    <WrapPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                        <Button x:Name="btnSave" Content="Save" Style="{StaticResource PrimaryButton}" MinWidth="90"/>
+                        <Button x:Name="btnRevert" Content="Revert"/>
+                        <Button x:Name="btnSaveAs" Content="Save as new..."/>
+                    </WrapPanel>
+                    <TabControl x:Name="tabEditor" IsEnabled="False">
+                        <TabItem Header="POV">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="pnlPovTab" Margin="12">
+                                    <TextBlock Style="{StaticResource MutedText}" Margin="0,0,0,10"
+                                               Text="Each expression starts with # for members (e.g. #Jan;Feb;Mar) or { for member lists (e.g. {Top.[Hierarchy]}). Combine several with ; (e.g. {[Base]};{[Hierarchy]})."/>
+                                    <Grid x:Name="gridPov">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="40"/>
+                                            <ColumnDefinition Width="90"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                    </Grid>
+                                    <WrapPanel Margin="0,10,0,0">
+                                        <Button x:Name="btnAddCustom" Content="+ Custom"/>
+                                        <Button x:Name="btnRemoveCustom" Content="- Custom"/>
+                                    </WrapPanel>
+                                    <TextBlock x:Name="txtPovErrors" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" Margin="0,4,0,8"/>
+                                    <TextBlock Text="Resulting POV" Style="{StaticResource SectionTitle}" Margin="0,4,0,4"/>
+                                    <TextBox x:Name="txtPovFull" IsReadOnly="True" TextWrapping="Wrap" Style="{StaticResource Mono}" Background="{StaticResource LightBeigeBrush}"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+                        <TabItem Header="Options">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <Grid x:Name="gridOptions" Margin="12">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="40"/>
-                                        <ColumnDefinition Width="90"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="320"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Extract format" Style="{StaticResource FieldLabel}"/>
+                                    <ComboBox Grid.Row="0" Grid.Column="1" x:Name="cmbExtractFormat" IsEditable="True" Margin="0,3"
+                                              ToolTip="extractFormat code. Labels come from EATemplateManager.config.json."/>
+                                    <TextBlock Grid.Row="1" Text="Destination DSN" Style="{StaticResource FieldLabel}"/>
+                                    <ComboBox Grid.Row="1" Grid.Column="1" x:Name="cmbDsn" IsEditable="True" Margin="0,3" ToolTip="selectedDSN"/>
+                                    <TextBlock Grid.Row="2" Text="Table prefix" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="txtTablePrefix" Margin="0,3" ToolTip="tablePrefix"/>
+                                    <TextBlock Grid.Row="3" Text="File prefix" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Grid.Row="3" Grid.Column="1" x:Name="txtFilePrefix" Margin="0,3" ToolTip="filePrefix"/>
+                                    <TextBlock Grid.Row="4" Text="Delimiter" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Grid.Row="4" Grid.Column="1" x:Name="txtDelimiter" Margin="0,3" Width="60" HorizontalAlignment="Left" ToolTip="delimiter"/>
+                                    <TextBlock Grid.Row="5" Text="Export option" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Grid.Row="5" Grid.Column="1" x:Name="txtExportOption" Margin="0,3" Width="60" HorizontalAlignment="Left" ToolTip="exportOption (numeric code)"/>
+                                    <TextBlock Grid.Row="6" Text="Line item detail" Style="{StaticResource FieldLabel}"/>
+                                    <ComboBox Grid.Row="6" Grid.Column="1" x:Name="cmbLineItem" IsEditable="True" Margin="0,3" ToolTip="lineItemDetailOption"/>
+                                    <TextBlock Grid.Row="7" Text="Extract" Style="{StaticResource FieldLabel}" VerticalAlignment="Top" Margin="0,8,10,4"/>
+                                    <StackPanel Grid.Row="7" Grid.Column="1" Margin="0,6,0,0">
+                                        <CheckBox x:Name="chkExtractData" Content="Data (extractData)" Margin="0,3"/>
+                                        <CheckBox x:Name="chkExtractCalculatedData" Content="Calculated data (extractCalculatedData)" Margin="0,3"/>
+                                        <CheckBox x:Name="chkExtractDerivedData" Content="Derived data (extractDerivedData)" Margin="0,3"/>
+                                        <CheckBox x:Name="chkExtractDynAccts" Content="Dynamic accounts (extractDynAccts)" Margin="0,3"/>
+                                        <CheckBox x:Name="chkExtractPhasedSubmission" Content="Phased submission (extractPhasedSubmission)" Margin="0,3"/>
+                                        <CheckBox x:Name="chkExtractCellText" Content="Cell text (extractCellText)" Margin="0,3"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="8" Text="Other options" Style="{StaticResource FieldLabel}" VerticalAlignment="Top" Margin="0,10,10,4"/>
+                                    <TextBlock Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" x:Name="txtOtherOptions" Margin="0,10,0,0" Style="{StaticResource MutedText}"
+                                               Text="(none)"/>
                                 </Grid>
-                                <WrapPanel Margin="0,8,0,0">
-                                    <Button x:Name="btnAddCustom" Content="+ Custom"/>
-                                    <Button x:Name="btnRemoveCustom" Content="- Custom"/>
-                                </WrapPanel>
-                                <TextBlock x:Name="txtPovErrors" Foreground="#FFC62828" TextWrapping="Wrap" Margin="0,4,0,8"/>
-                                <TextBlock Text="Resulting POV" FontWeight="SemiBold" Margin="0,4,0,4"/>
-                                <TextBox x:Name="txtPovFull" IsReadOnly="True" TextWrapping="Wrap" Style="{StaticResource Mono}" Background="#FFF7F7F7"/>
-                            </StackPanel>
-                        </ScrollViewer>
-                    </TabItem>
-                    <TabItem Header="Options">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <Grid x:Name="gridOptions" Margin="10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="320"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="Extract format" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox Grid.Row="0" Grid.Column="1" x:Name="cmbExtractFormat" IsEditable="True" Margin="0,3"
-                                          ToolTip="extractFormat code. Labels come from EATemplateManager.config.json."/>
-                                <TextBlock Grid.Row="1" Text="Destination DSN" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox Grid.Row="1" Grid.Column="1" x:Name="cmbDsn" IsEditable="True" Margin="0,3" ToolTip="selectedDSN"/>
-                                <TextBlock Grid.Row="2" Text="Table prefix" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Grid.Row="2" Grid.Column="1" x:Name="txtTablePrefix" Margin="0,3" ToolTip="tablePrefix"/>
-                                <TextBlock Grid.Row="3" Text="File prefix" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Grid.Row="3" Grid.Column="1" x:Name="txtFilePrefix" Margin="0,3" ToolTip="filePrefix"/>
-                                <TextBlock Grid.Row="4" Text="Delimiter" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Grid.Row="4" Grid.Column="1" x:Name="txtDelimiter" Margin="0,3" Width="60" HorizontalAlignment="Left" ToolTip="delimiter"/>
-                                <TextBlock Grid.Row="5" Text="Export option" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Grid.Row="5" Grid.Column="1" x:Name="txtExportOption" Margin="0,3" Width="60" HorizontalAlignment="Left" ToolTip="exportOption (numeric code)"/>
-                                <TextBlock Grid.Row="6" Text="Line item detail" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox Grid.Row="6" Grid.Column="1" x:Name="cmbLineItem" IsEditable="True" Margin="0,3" ToolTip="lineItemDetailOption"/>
-                                <TextBlock Grid.Row="7" Text="Extract" Style="{StaticResource FieldLabel}" VerticalAlignment="Top" Margin="0,8,10,4"/>
-                                <StackPanel Grid.Row="7" Grid.Column="1" Margin="0,6,0,0">
-                                    <CheckBox x:Name="chkExtractData" Content="Data (extractData)" Margin="0,2"/>
-                                    <CheckBox x:Name="chkExtractCalculatedData" Content="Calculated data (extractCalculatedData)" Margin="0,2"/>
-                                    <CheckBox x:Name="chkExtractDerivedData" Content="Derived data (extractDerivedData)" Margin="0,2"/>
-                                    <CheckBox x:Name="chkExtractDynAccts" Content="Dynamic accounts (extractDynAccts)" Margin="0,2"/>
-                                    <CheckBox x:Name="chkExtractPhasedSubmission" Content="Phased submission (extractPhasedSubmission)" Margin="0,2"/>
-                                    <CheckBox x:Name="chkExtractCellText" Content="Cell text (extractCellText)" Margin="0,2"/>
-                                </StackPanel>
-                                <TextBlock Grid.Row="8" Text="Other options" Style="{StaticResource FieldLabel}" VerticalAlignment="Top" Margin="0,10,10,4"/>
-                                <TextBlock Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" x:Name="txtOtherOptions" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="#FF555555"
-                                           Text="(none)"/>
-                            </Grid>
-                        </ScrollViewer>
-                    </TabItem>
-                    <TabItem x:Name="tabRaw" Header="Raw XML">
-                        <DockPanel Margin="10">
-                            <CheckBox DockPanel.Dock="Top" x:Name="chkEditRaw" Margin="0,0,0,8"
-                                      Content="Edit raw XML (advanced: the POV and Options tabs are locked while this is on)"/>
-                            <TextBox x:Name="txtRaw" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True"
-                                     VerticalScrollBarVisibility="Auto" Style="{StaticResource Mono}"/>
-                        </DockPanel>
-                    </TabItem>
-                </TabControl>
-            </DockPanel>
+                            </ScrollViewer>
+                        </TabItem>
+                        <TabItem x:Name="tabRaw" Header="Raw XML">
+                            <DockPanel Margin="12">
+                                <CheckBox DockPanel.Dock="Top" x:Name="chkEditRaw" Margin="0,0,0,8"
+                                          Content="Edit raw XML (advanced: the POV and Options tabs are locked while this is on)"/>
+                                <TextBox x:Name="txtRaw" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True"
+                                         VerticalScrollBarVisibility="Auto" Style="{StaticResource Mono}"/>
+                            </DockPanel>
+                        </TabItem>
+                    </TabControl>
+                </DockPanel>
+            </Border>
         </Grid>
     </DockPanel>
 </Window>
@@ -1162,19 +1194,233 @@ $script:XamlText = @{
     'NameDialog.xaml' = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Template name" Width="420" SizeToContent="Height" ResizeMode="NoResize"
-        WindowStartupLocation="CenterOwner" FontSize="13" ShowInTaskbar="False">
-    <StackPanel Margin="14">
-        <TextBlock x:Name="txtPrompt" Text="Template name:" TextWrapping="Wrap" Margin="0,0,0,6"/>
-        <TextBox x:Name="txtName"/>
-        <TextBlock x:Name="txtError" Foreground="#FFC62828" TextWrapping="Wrap" Margin="0,8,0,0"/>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button x:Name="btnOK" Content="OK" IsDefault="True" Padding="14,3" Margin="0,0,8,0" MinWidth="72"/>
-            <Button x:Name="btnCancel" Content="Cancel" IsCancel="True" Padding="14,3" MinWidth="72"/>
+        Title="Template name" Width="440" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource LightBeigeBrush}" Foreground="{StaticResource DeepGreenBrush}" FontFamily="Segoe UI" FontSize="13">
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Height="4" Background="{StaticResource ElectricGreenBrush}"/>
+        <StackPanel Margin="18,14,18,16">
+            <TextBlock x:Name="txtPrompt" Text="Template name:" TextWrapping="Wrap" Margin="0,0,0,8" FontWeight="SemiBold"/>
+            <TextBox x:Name="txtName"/>
+            <TextBlock x:Name="txtError" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                <Button x:Name="btnOK" Content="OK" IsDefault="True" Style="{StaticResource PrimaryButton}" Margin="0,0,8,0" MinWidth="90"/>
+                <Button x:Name="btnCancel" Content="Cancel" IsCancel="True" Margin="0" MinWidth="90"/>
+            </StackPanel>
         </StackPanel>
-    </StackPanel>
+    </DockPanel>
 </Window>
 '@
+    'Theme.xaml' = @'
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- inlumi colour guide -->
+    <SolidColorBrush x:Key="DeepGreenBrush" Color="#133533"/>
+    <SolidColorBrush x:Key="ElectricGreenBrush" Color="#6CE9C8"/>
+    <SolidColorBrush x:Key="GreyGreenBrush" Color="#70B8A5"/>
+    <SolidColorBrush x:Key="LightGreenBrush" Color="#C1F2E5"/>
+    <SolidColorBrush x:Key="BeigeBrush" Color="#F5F0E9"/>
+    <SolidColorBrush x:Key="LightBeigeBrush" Color="#FBFAF7"/>
+    <SolidColorBrush x:Key="WhiteBrush" Color="#FFFFFF"/>
+    <!-- Derived tints (Deep Green / Beige) and functional colours kept for legibility -->
+    <SolidColorBrush x:Key="MutedBrush" Color="#4D6664"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#E4DCCF"/>
+    <SolidColorBrush x:Key="ErrorBrush" Color="#C62828"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="#A35200"/>
+
+    <Style TargetType="Window">
+        <Setter Property="Background" Value="{StaticResource LightBeigeBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontSize" Value="13"/>
+    </Style>
+
+    <Style x:Key="FieldLabel" TargetType="TextBlock">
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="0,4,10,4"/>
+        <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+    </Style>
+    <Style x:Key="MutedText" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style x:Key="SectionTitle" TargetType="TextBlock">
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+    </Style>
+    <Style x:Key="Card" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource WhiteBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="12"/>
+    </Style>
+
+    <!-- Buttons: outlined by default, filled Deep Green for primary actions -->
+    <Style TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+        <Setter Property="Background" Value="{StaticResource WhiteBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource DeepGreenBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="12,4"/>
+        <Setter Property="Margin" Value="0,0,6,6"/>
+        <Setter Property="MinWidth" Value="72"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource LightGreenBrush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{StaticResource GreyGreenBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Background" Value="{StaticResource DeepGreenBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource WhiteBrush}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource GreyGreenBrush}"/>
+                <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{StaticResource ElectricGreenBrush}"/>
+                <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Inputs -->
+    <Style TargetType="TextBox">
+        <Setter Property="BorderBrush" Value="{StaticResource GreyGreenBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+        <Setter Property="Padding" Value="3,2"/>
+        <Setter Property="SelectionBrush" Value="{StaticResource GreyGreenBrush}"/>
+    </Style>
+    <Style x:Key="Mono" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+        <Setter Property="FontFamily" Value="Consolas"/>
+    </Style>
+    <Style TargetType="PasswordBox">
+        <Setter Property="BorderBrush" Value="{StaticResource GreyGreenBrush}"/>
+        <Setter Property="Padding" Value="3,2"/>
+    </Style>
+    <Style TargetType="ComboBox">
+        <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource GreyGreenBrush}"/>
+    </Style>
+    <Style TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+    </Style>
+    <Style TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+    </Style>
+
+    <!-- Lists: Light Green selection with a Deep Green marker -->
+    <Style TargetType="ListBox">
+        <Setter Property="Background" Value="{StaticResource WhiteBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+    </Style>
+    <Style TargetType="ListBoxItem">
+        <Setter Property="Padding" Value="8,5"/>
+        <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="3,0,0,0" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource BeigeBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource LightGreenBrush}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource DeepGreenBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Tabs: Electric Green underline on the active tab -->
+    <Style TargetType="TabControl">
+        <Setter Property="Background" Value="{StaticResource WhiteBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+        <Setter Property="Padding" Value="0"/>
+    </Style>
+    <Style TargetType="TabItem">
+        <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+        <Setter Property="Padding" Value="14,7"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,3" Padding="{TemplateBinding Padding}" Margin="0,0,2,0">
+                        <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource BeigeBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource ElectricGreenBrush}"/>
+                            <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="Menu">
+        <Setter Property="Background" Value="{StaticResource BeigeBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource DeepGreenBrush}"/>
+        <Setter Property="Padding" Value="8,2"/>
+    </Style>
+    <Style TargetType="StatusBar">
+        <Setter Property="Background" Value="{StaticResource DeepGreenBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource LightGreenBrush}"/>
+        <Setter Property="Padding" Value="8,2"/>
+    </Style>
+    <Style TargetType="ToolTip">
+        <Setter Property="Background" Value="{StaticResource DeepGreenBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource WhiteBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource DeepGreenBrush}"/>
+    </Style>
+</ResourceDictionary>
+'@
+}
+#endregion
+
+#region Embedded images (source: Assets\)
+$script:AssetBase64 = @{
+    'Logo_inlumi_white.png' = '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'
 }
 #endregion
 
@@ -1220,13 +1466,69 @@ $script:S = @{
 
 function New-XamlWindow {
     param([string]$File)
-    $text = $script:XamlText[$File]
+    $text = Get-XamlText $File
     $window = [Windows.Markup.XamlReader]::Parse($text)
     $controls = @{}
     foreach ($m in [regex]::Matches($text, 'x:Name="([^"]+)"')) {
         $controls[$m.Groups[1].Value] = $window.FindName($m.Groups[1].Value)
     }
+    if ($script:AppIcon) { $window.Icon = $script:AppIcon }
+    if ($controls['imgLogo'] -and $script:Logo) { $controls['imgLogo'].Source = $script:Logo }
     return @{ Window = $window; C = $controls }
+}
+
+function Get-XamlText([string]$File) {
+    return $script:XamlText[$File]
+}
+
+function Get-AssetImage([string]$Name) {
+    # Embedded (single-file build) or from the Assets folder next to the script.
+    $bytes = $null
+    if ((Test-Path variable:script:AssetBase64) -and $script:AssetBase64.ContainsKey($Name)) { $bytes = [Convert]::FromBase64String($script:AssetBase64[$Name]) }
+    else {
+        $p = Join-Path $script:Root "Assets\$Name"
+        if (Test-Path $p) { $bytes = [IO.File]::ReadAllBytes($p) }
+    }
+    if (-not $bytes) { return $null }
+    $img = New-Object System.Windows.Media.Imaging.BitmapImage
+    $img.BeginInit()
+    $img.StreamSource = New-Object IO.MemoryStream (, $bytes)
+    $img.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+    $img.EndInit()
+    $img.Freeze()
+    return $img
+}
+
+function New-AppIcon($Logo) {
+    # Window/taskbar icon: the white wordmark on a Deep Green rounded square.
+    $size = 64
+    $visual = New-Object System.Windows.Media.DrawingVisual
+    $dc = $visual.RenderOpen()
+    $dc.DrawRoundedRectangle((Get-Brush 'DeepGreenBrush'), $null, (New-Object System.Windows.Rect 0, 0, $size, $size), 12, 12)
+    $w = 54; $h = $w * $Logo.PixelHeight / $Logo.PixelWidth
+    $dc.DrawImage($Logo, (New-Object System.Windows.Rect (($size - $w) / 2), (($size - $h) / 2), $w, $h))
+    $dc.Close()
+    $bmp = New-Object System.Windows.Media.Imaging.RenderTargetBitmap $size, $size, 96, 96, ([System.Windows.Media.PixelFormats]::Pbgra32)
+    $bmp.Render($visual)
+    $bmp.Freeze()
+    return $bmp
+}
+
+function Get-Brush([string]$Key) {
+    return [System.Windows.Application]::Current.Resources[$Key]
+}
+
+function Initialize-Theme {
+    # Application-level resources so every window and dialog picks up the inlumi theme.
+    if (-not [System.Windows.Application]::Current) {
+        $app = New-Object System.Windows.Application
+        $app.ShutdownMode = [System.Windows.ShutdownMode]::OnExplicitShutdown
+    }
+    $theme = [Windows.Markup.XamlReader]::Parse((Get-XamlText 'Theme.xaml'))
+    [System.Windows.Application]::Current.Resources.MergedDictionaries.Add($theme)
+    $script:Logo = Get-AssetImage 'Logo_inlumi_white.png'
+    $script:AppIcon = $null
+    if ($script:Logo) { try { $script:AppIcon = New-AppIcon $script:Logo } catch { } }
 }
 
 function Read-JsonFile([string]$Path) {
@@ -1250,6 +1552,7 @@ function Get-Config {
     $cfg = [pscustomobject]@{
         Server = 'localhost'; Database = 'hfm'; UseSqlAuth = $false; SqlUser = ''; LastApp = ''; LastUser = ''
         ExtractFormats = $formats; LineItemOptions = @('EA_LINEITEM_EXCLUDE', 'EA_LINEITEM_SUMMARY', 'EA_LINEITEM_DETAIL')
+        BackupFolder = 'Backups'   # relative paths are resolved against the script's folder
     }
     $shared = Read-JsonFile $script:ConfigPath
     if ($shared) {
@@ -1436,7 +1739,7 @@ function Update-TemplateList([string]$SelectKey) {
         $tb = New-Object System.Windows.Controls.TextBlock
         $tb.Text = 'SS_DEFAULT  (last-used settings)'
         $tb.FontStyle = [System.Windows.FontStyles]::Italic
-        $tb.Foreground = [System.Windows.Media.Brushes]::DimGray
+        $tb.Foreground = Get-Brush 'MutedBrush'
         $li = New-Object System.Windows.Controls.ListBoxItem
         $li.Content = $tb
         $li.Tag = [pscustomobject]@{ Name = 'SS_DEFAULT'; Key = 'SS_DEFAULT'; Status = 'OK'; IsDefault = $true; IsNew = $false }
@@ -1446,8 +1749,8 @@ function Update-TemplateList([string]$SelectKey) {
         $tb = New-Object System.Windows.Controls.TextBlock
         switch ($e.Status) {
             'OK' { $tb.Text = $e.Name }
-            'NotInIndex' { $tb.Text = "$($e.Name)   [not in index]"; $tb.Foreground = [System.Windows.Media.Brushes]::DarkOrange }
-            'MissingData' { $tb.Text = "$($e.Name)   [no data]"; $tb.Foreground = [System.Windows.Media.Brushes]::Firebrick }
+            'NotInIndex' { $tb.Text = "$($e.Name)   [not in index]"; $tb.Foreground = Get-Brush 'WarningBrush' }
+            'MissingData' { $tb.Text = "$($e.Name)   [no data]"; $tb.Foreground = Get-Brush 'ErrorBrush' }
         }
         $li = New-Object System.Windows.Controls.ListBoxItem
         $li.Content = $tb
@@ -1539,7 +1842,7 @@ function Add-PovRow([string]$Dim, [string]$Expr) {
     $name = New-Object System.Windows.Controls.TextBlock
     $name.Text = Get-EaDimName $Dim
     $name.VerticalAlignment = 'Center'
-    $name.Foreground = [System.Windows.Media.Brushes]::DimGray
+    $name.Foreground = Get-Brush 'MutedBrush'
     $tb = New-Object System.Windows.Controls.TextBox
     $tb.Text = $Expr
     $tb.FontFamily = New-Object System.Windows.Media.FontFamily 'Consolas'
@@ -1950,7 +2253,7 @@ function Invoke-Restore {
     if (-not (Confirm-Discard)) { return }
     $dlg = New-Object Microsoft.Win32.OpenFileDialog
     $dlg.Filter = 'EA Template Manager backup (*.csv)|*.csv'
-    $dir = Join-Path $script:Root 'Backups'
+    $dir = Get-EaBackupDirectory
     if (Test-Path $dir) { $dlg.InitialDirectory = $dir }
     if (-not $dlg.ShowDialog($script:Window)) { return }
     $groups = @(Import-Csv -Path $dlg.FileName | Group-Object App, Username, ParameterKey)
@@ -1975,10 +2278,14 @@ function Invoke-BackupAll {
 
 #region Main window
 
+Initialize-Theme
 $main = New-XamlWindow 'MainWindow.xaml'
 $script:Window = $main.Window
 $script:C = $main.C
 $script:Config = Get-Config
+$backupDir = [string]$script:Config.BackupFolder
+if (-not [IO.Path]::IsPathRooted($backupDir)) { $backupDir = Join-Path $script:Root $backupDir }
+Set-EaBackupDirectory ([IO.Path]::GetFullPath($backupDir))
 
 foreach ($p in $script:Config.ExtractFormats.PSObject.Properties) { [void]$script:C.cmbExtractFormat.Items.Add("$($p.Name) - $($p.Value)") }
 foreach ($o in @($script:Config.LineItemOptions)) { [void]$script:C.cmbLineItem.Items.Add($o) }
@@ -2134,7 +2441,7 @@ $script:C.mnuBackupAll.Add_Click({ Invoke-Safe { Invoke-BackupAll } })
 $script:C.mnuRestore.Add_Click({ Invoke-Safe { Invoke-Restore } })
 $script:C.mnuOpenBackups.Add_Click({
         Invoke-Safe {
-            $dir = Join-Path $script:Root 'Backups'
+            $dir = Get-EaBackupDirectory
             if (-not (Test-Path $dir)) { [void](New-Item -ItemType Directory -Path $dir) }
             Start-Process explorer.exe $dir
         }
