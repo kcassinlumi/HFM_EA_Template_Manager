@@ -5,6 +5,30 @@ A Windows GUI for managing HFM **Extended Analytics (EA) extract templates** dir
 It is built with PowerShell 5.1 and WPF, so nothing needs to be installed. It runs on any Windows server with .NET Framework 4.x, typically the HFM server itself.
 
 ## Starting
+Run the EATemplateManager.ps1 file, its magic...
+
+<img width="1206" height="797" alt="image" src="https://github.com/user-attachments/assets/988da59a-f6e5-4599-844e-8f73198dbe3f" />
+<img width="1207" height="794" alt="image" src="https://github.com/user-attachments/assets/1577631b-90cd-4939-8263-543c290d1d06" />
+<img width="1210" height="791" alt="image" src="https://github.com/user-attachments/assets/9a62cb9a-34ff-456c-b95c-f5009b890e3a" />
+<img width="1208" height="792" alt="image" src="https://github.com/user-attachments/assets/e2583ee7-19ca-4384-bee1-211a04c5735a" />
+<img width="529" height="595" alt="image" src="https://github.com/user-attachments/assets/153a93f0-c663-4a1f-90ec-494a2ab940fb" />
+<img width="334" height="313" alt="image" src="https://github.com/user-attachments/assets/ba81cdcc-67e3-48de-b3f0-573d8ef822ac" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 **On another server:** copy the single file `dist\EATemplateManager.ps1` anywhere, then right-click it and choose **Run with PowerShell**, or run:
 
